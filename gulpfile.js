@@ -7,18 +7,13 @@ var concat = require('gulp-concat'); //concatination files to one file
 var uglify = require('gulp-uglify'); //compress js
 var csso = require('gulp-csso'); //compress js
 var del = require('del'); //delete folders and files
+var rename = require('gulp-rename');
 var browserSync = require('browser-sync').create();
 
 gulp.task('lint', function () {
   return gulp.src('./src/js/*.js')
     .pipe(jshint())
     .pipe(jshint.reporter('default')); //default reporter show errors and warnings if exist (fail - stop running)
-});
-
-gulp.task('less', function () {
-  return gulp.src('./src/styles/*.less')
-    .pipe(less())
-    .pipe(gulp.dest('./dist/styles/'));
 });
 
 gulp.task('transpile', function () {
@@ -66,14 +61,44 @@ gulp.task('clearDist', function () {
   del('./dist/');
 });
 
+// build css
+gulp.task('less', function () {
+  return gulp.src('./src/styles/*.less')
+    .pipe(concat('all.css')) //concat all less files
+    .pipe(less()) //compile
+    .pipe(csso()) //minify
+    .pipe(rename({suffix: '.min'})) //add .min
+    .pipe(gulp.dest('./src/styles/'))
+    .pipe(browserSync.stream()) //injection
+});
+
+//build js
+gulp.task('js', function () {
+  var res = gulp.src('./src/js/*.js')
+    .pipe(concat('all.js')) //concat all less files
+    .pipe(babel({
+      presets: ['es2015']
+    })) //transpile
+    .pipe(jshint())
+    .pipe(jshint.reporter('fail')) //fail reporter stop running if has errors
+    .pipe(uglify()) //minify
+    .pipe(rename({suffix: '.min'})) //add .min
+    .pipe(gulp.dest('./src/styles/'));
+
+  browserSync.reload();
+  return res;
+});
+
 //watch for all less, js, html and livereload
 gulp.task('server', function () {
   //init server
   browserSync.init({
-    server: './dist'
+    server: './src'
   });
   //add watchers for html, js, less
   gulp.watch('./src/styles/*.less', ['less']);
-  gulp.watch('./src/js/*.js', ['transpile']);
-  gulp.watch('./src/*.html', ['copyHTML']);
+  gulp.watch('./src/js/*.js', ['js']);
+  gulp.watch('./src/*.html').on('change', browserSync.reload);
 });
+
+gulp.task('default', ['server']);
