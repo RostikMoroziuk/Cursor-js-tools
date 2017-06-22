@@ -57,36 +57,35 @@ gulp.task('compress', function () {
     .pipe(gulp.dest('./src/styles/min/'));
 });
 
-gulp.task('clearDist', function () {
-  del('./dist/');
+gulp.task('clearProd', function () {
+  del('./prod');
 });
 
 // build css
 gulp.task('less', function () {
   return gulp.src('./src/styles/*.less')
-    .pipe(concat('all.css')) //concat all less files
+    // .pipe(concat('all.css')) //concat all less files
     .pipe(less()) //compile
-    .pipe(csso()) //minify
-    .pipe(rename({suffix: '.min'})) //add .min
+    // .pipe(csso()) //minify
+    // .pipe(rename({suffix: '.min'})) //add .min
     .pipe(gulp.dest('./src/styles/'))
     .pipe(browserSync.stream()) //injection
 });
 
 //build js
 gulp.task('js', function () {
-  var res = gulp.src('./src/js/*.js')
-    .pipe(concat('all.js')) //concat all less files
+  return gulp.src('./src/js/*.js')
     .pipe(babel({
       presets: ['es2015']
     })) //transpile
     .pipe(jshint())
-    .pipe(jshint.reporter('fail')) //fail reporter stop running if has errors
-    .pipe(uglify()) //minify
-    .pipe(rename({suffix: '.min'})) //add .min
-    .pipe(gulp.dest('./src/styles/'));
+    .pipe(jshint.reporter('default')) //fail reporter stop running if has errors
+    .pipe(gulp.dest('./src/js/'));
+});
 
+gulp.task('js-watch', ['js'], function (done) {
   browserSync.reload();
-  return res;
+  done();
 });
 
 //watch for all less, js, html and livereload
@@ -97,8 +96,23 @@ gulp.task('server', function () {
   });
   //add watchers for html, js, less
   gulp.watch('./src/styles/*.less', ['less']);
-  gulp.watch('./src/js/*.js', ['js']);
+  gulp.watch('./src/js/*.js', ['js-watch']);
   gulp.watch('./src/*.html').on('change', browserSync.reload);
 });
+
+gulp.task('prod', function () {
+  del('./prod/'); // delete folder if exist
+  //copy html, js, css
+  gulp.src(['./src/*.html', './src/js/*.js', './src/styles/*.css'])
+    .pipe(gulpCopy('./prod/', {prefix: 1}));
+
+  gulp.src('./src/js/*.js')
+    .pipe(concat('all.js')) //concat all less files
+    .pipe(uglify()) //minify
+    .pipe(rename({
+      suffix: '.min'
+    })) //add .min
+    .pipe(gulp.dest('./prod/js/'));
+})
 
 gulp.task('default', ['server']);
