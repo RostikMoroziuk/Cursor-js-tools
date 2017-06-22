@@ -101,7 +101,7 @@ gulp.task('server', function () {
 });
 
 gulp.task('prod', function () {
-  del('./prod/'); // delete folder if exist
+  del.sync('./prod/'); // delete folder if exist
   //copy html, js, css
   gulp.src(['./src/*.html', './src/js/*.js', './src/styles/*.css'])
     .pipe(gulpCopy('./prod/', {prefix: 1}));
