@@ -28,7 +28,7 @@ gulp.task('transpile', function () {
 
 gulp.task('copyHTML', function () {
   var res = gulp.src('./src/*.html')
-    .pipe(gulpCopy('./dist/'));
+    .pipe(gulpCopy('./prod/', {prefix: 1}));
   browserSync.reload();
   return res;
 });
@@ -68,7 +68,7 @@ gulp.task('less', function () {
     .pipe(less()) //compile
     // .pipe(csso()) //minify
     // .pipe(rename({suffix: '.min'})) //add .min
-    .pipe(gulp.dest('./src/styles/'))
+    .pipe(gulp.dest('./prod/styles/'))
     .pipe(browserSync.stream()) //injection
 });
 
@@ -80,7 +80,7 @@ gulp.task('js', function () {
     })) //transpile
     .pipe(jshint())
     .pipe(jshint.reporter('default')) //fail reporter stop running if has errors
-    .pipe(gulp.dest('./src/js/'));
+    .pipe(gulp.dest('./prod/js/'));
 });
 
 gulp.task('js-watch', ['js'], function (done) {
@@ -92,21 +92,21 @@ gulp.task('js-watch', ['js'], function (done) {
 gulp.task('server', function () {
   //init server
   browserSync.init({
-    server: './src'
+    server: './prod/'
   });
   //add watchers for html, js, less
   gulp.watch('./src/styles/*.less', ['less']);
   gulp.watch('./src/js/*.js', ['js-watch']);
-  gulp.watch('./src/*.html').on('change', browserSync.reload);
+  gulp.watch('./src/*.html', ['copyHTML']);
 });
 
 gulp.task('prod', function () {
   del.sync('./prod/'); // delete folder if exist
   //copy html, js, css
-  gulp.src(['./src/*.html', './src/js/*.js', './src/styles/*.css'])
+  gulp.src(['./src/*.html', './src/js/*.js', './src/styles/*.less'])
     .pipe(gulpCopy('./prod/', {prefix: 1}));
 
-  gulp.src('./src/js/*.js')
+  gulp.src('./prod/js/*.js')
     .pipe(concat('all.js')) //concat all less files
     .pipe(uglify()) //minify
     .pipe(rename({
